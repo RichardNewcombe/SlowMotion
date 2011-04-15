@@ -22,8 +22,12 @@ using namespace pangolin;
 #include "utils.h"
 #include "utilsShared.h"
 
-const std::string fname1 =  "/data/phd/workspace/code/svn/dataset/Aloe/view0.png";
-const std::string fname2 =  "/data/phd/workspace/code/svn/dataset/Aloe/view1.png";
+//const std::string fname1 =  "/data/phd/workspace/code/svn/dataset/Aloe/view0.png";
+//const std::string fname2 =  "/data/phd/workspace/code/svn/dataset/Aloe/view1.png";
+const std::string fname1 =  "/data/phd/workspace/code/svn/dataset/heart/180608_Images/FullLeft000072.tiff";
+const std::string fname2 =  "/data/phd/workspace/code/svn/dataset/heart/180608_Images/FullLeft000070.tiff";
+
+
 
 void char4_2_float4(uchar4 * d_in, float4 * d_out, int2 imageSize, size_t uchar4Pitch,size_t float4Pitch );
 float * getFlow( float * d_u, float * d_v, float * d_illum, int2 imageSize, size_t pitch  );
@@ -55,7 +59,7 @@ int main( int /*argc*/, char* argv[] )
     Image<Rgb<byte> > *pVidFrame1 = &im1;
     convert_image(*pVidFrame1, *imRGBA1);
 
-    int2 imageSize = (int2){im0.size().x,im0.size().y};
+    int2 imageSize = (int2){768,576 };//im0.size().x,im0.size().y};
     const int width =  imageSize.x;
     const int height = imageSize.y;
 
@@ -68,20 +72,20 @@ int main( int /*argc*/, char* argv[] )
     cutilSafeCall(cudaMallocPitch(&(d_v ),          &(imagePitchFloat),  imageSize.x* sizeof (float),  imageSize.y));
     cutilSafeCall(cudaMallocPitch(&(d_illum ),          &(imagePitchFloat),  imageSize.x* sizeof (float),  imageSize.y));
 
-    cout << "real imageSIze " << im0.size() <<endl;
+    //cout << "real imageSIze " << im0.size() <<endl;
     float * test= getFlow( d_u, d_v, d_illum, imageSize,imagePitchFloat);
 
 
     // Create OpenGL window in single line thanks to GLUT
     //CreateGlutWindowAndBind("Main",640,480);
 
-    float aspect = (float)im0.size().x/(float)im0.size().y;
+    float aspect = (float)imageSize.x/(float)imageSize.y;
     View& view_image0 = Display("image0").SetAspect(aspect);
     View& view_image1 = Display("image1").SetAspect(aspect);
     View& view_image2 = Display("image2").SetAspect(aspect);
     View& view_image3 = Display("image3").SetAspect(aspect);
 
-    cout <<  "Image size in " << im0.size().x << " " << im0.size().y << endl;
+    //cout <<  "Image size in " << im0.size().x << " " << im0.size().y << endl;
 
 
 
@@ -134,15 +138,15 @@ int main( int /*argc*/, char* argv[] )
     cutilSafeCall(cudaMallocPitch(&(d_rgb_float4_0 ),          &(imagePitchFloat4),  imageSize.x* sizeof (float4),  imageSize.y));
     cutilSafeCall(cudaMallocPitch(&(d_rgb_float4_1 ),          &(imagePitchFloat4),  imageSize.x* sizeof (float4),  imageSize.y));
 
-    //uchar4 host to device image 0
-    cutilSafeCall(cudaMemcpy2D(d_rgb_uchar4_temp,imagePitchUchar4, (uchar4 *)imRGBA0->data(),imageSize.x*sizeof(uchar4),imageSize.x*sizeof(uchar4),imageSize.y,cudaMemcpyHostToDevice));
-    //convert
-    char4_2_float4(d_rgb_uchar4_temp,d_rgb_float4_0,  imageSize,imagePitchUchar4 , imagePitchFloat4 );
+//    //uchar4 host to device image 0
+//    cutilSafeCall(cudaMemcpy2D(d_rgb_uchar4_temp,imagePitchUchar4, (uchar4 *)imRGBA0->data(),imageSize.x*sizeof(uchar4),imageSize.x*sizeof(uchar4),imageSize.y,cudaMemcpyHostToDevice));
+//    //convert
+//    char4_2_float4(d_rgb_uchar4_temp,d_rgb_float4_0,  imageSize,imagePitchUchar4 , imagePitchFloat4 );
 
-    //uchar4 host to device image 1
-    cutilSafeCall(cudaMemcpy2D(d_rgb_uchar4_temp,imagePitchUchar4, (uchar4 *)imRGBA1->data(),imageSize.x*sizeof(uchar4),imageSize.x*sizeof(uchar4),imageSize.y,cudaMemcpyHostToDevice));
-    //convert
-    char4_2_float4(d_rgb_uchar4_temp,d_rgb_float4_1,  imageSize,imagePitchUchar4 , imagePitchFloat4 );
+//    //uchar4 host to device image 1
+//    cutilSafeCall(cudaMemcpy2D(d_rgb_uchar4_temp,imagePitchUchar4, (uchar4 *)imRGBA1->data(),imageSize.x*sizeof(uchar4),imageSize.x*sizeof(uchar4),imageSize.y,cudaMemcpyHostToDevice));
+//    //convert
+//    char4_2_float4(d_rgb_uchar4_temp,d_rgb_float4_1,  imageSize,imagePitchUchar4 , imagePitchFloat4 );
 
 
     // Default hooks for exiting (Esc) and fullscreen (tab).
@@ -172,11 +176,15 @@ int main( int /*argc*/, char* argv[] )
 
 
             scaleGLPixels(make_float3(scale,scale,scale),(float3){0});
+            view_image1.Activate();
+            DisplayFloatDeviceMem(&view_image1, d_u,imagePitchFloat, greypbo,greyTexture);
+
             view_image2.Activate();
-            DisplayFloatDeviceMem(&view_image2, d_u,imagePitchFloat, greypbo,greyTexture);
+            DisplayFloatDeviceMem(&view_image2, d_v,imagePitchFloat, greypbo,greyTexture);
 
             view_image3.Activate();
-            DisplayFloatDeviceMem(&view_image3, d_v,imagePitchFloat, greypbo,greyTexture);
+            DisplayFloatDeviceMem(&view_image3, d_illum,imagePitchFloat, greypbo,greyTexture);
+
             scaleGLPixels(make_float3(1,1,1),(float3){0});
         }
 
@@ -239,7 +247,7 @@ float *  getFlow( float * d_u, float * d_v, float * d_illum, int2 imageSize, siz
 
 
 
-    flow.parameters().scale_factor = 0.5f;
+    flow.parameters().scale_factor = 0.95f;
 
     ready = flow.setInputImages(cu_im2, cu_im1);
 
@@ -248,17 +256,10 @@ float *  getFlow( float * d_u, float * d_v, float * d_illum, int2 imageSize, siz
     flow.parameters().iters = 10;
     flow.parameters().warps = 30;
 
-    flow.parameters().lambda = 100.0f;
+    flow.parameters().lambda = 40.0f;
     flow.parameters().gamma_c =0.05f;
     //flow.parameters().epsilon_u = 0.1f;
-
     //  flow.parameters().verbose = 10;
-
-
-    //flow.parameters().start_level = 9;
-    //flow.parameters().stop_level = 0;
-
-
 
 
 //    if(!ready)
@@ -277,21 +278,10 @@ float *  getFlow( float * d_u, float * d_v, float * d_illum, int2 imageSize, siz
 
 
 
-    //    iu::ImageGpu_32f_C1 v(result_size);
-    //    iu::ImageGpu_32f_C1 c(result_size);
-    //    iu::ImageGpu_8u_C4 cflow(result_size);
-
-
-
     iu::ImageGpu_32f_C1 u(d_v, imageSize.x, imageSize.y, pitch, true);
     iu::ImageGpu_32f_C1 v(d_u, imageSize.x, imageSize.y, pitch, true);
     iu::ImageGpu_32f_C1 c(d_illum, imageSize.x, imageSize.y, pitch, true);
     //    iu::ImageGpu_8u_C4 cflow(result_size);
-
-
-
-
-
 
 
     flow.getU_32f_C1(flow.parameters().stop_level, &u);
@@ -299,29 +289,5 @@ float *  getFlow( float * d_u, float * d_v, float * d_illum, int2 imageSize, siz
     flow.getIlluminationDifference_32f_C1(0, &c);
     //flow.getColorFlow_8u_C4(flow.parameters().stop_level, &cflow, 0.0f);
 
-    //    printf("display results ... \n");
-        float min,max;
-        iu::minMax(&u, u.roi(), min, max);
-
-    //    iu::imshow(&u, "u - x-disparities", true);
-    //    std::cout << "u = " << min << " .. " << max << ";    ";
-
-    //    iu::minMax(&v, v.roi(), min, max);
-    //    iu::imshow(&v, "v - y-disparities", true);
-    //    std::cout << "v = " << min << " .. " << max << ";    ";
-
-    //    iu::minMax(&c, c.roi(), min, max);
-    //    iu::imshow(&c, "c - illumination estimation", true);
-    //    std::cout << "c = " << min << " .. " << max << ";" << std::endl;
-
-    //    iu::imshow(&cflow, "color coded flow field");
-
-    std::cout << "Level used " <<flow.parameters().start_level <<std::endl;
-
-
-    //return EXIT_SUCCESS;
-
-    // Have fun! And do not hesitate to contact me if you have any problems. Or remarks. Or suggestions for the next release....
-    // Best, Manuel.
     return 0;
 }
